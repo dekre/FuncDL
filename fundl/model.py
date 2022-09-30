@@ -80,12 +80,15 @@ class FunDL(tf.keras.Model):
         return model
 
     def __build(self) -> tf.keras.Model:
-        inputs = tf.keras.Input(shape=(self.__input_shape,), name="input")
-        x = deepcopy(inputs)
-        for idx, layer_config in enumerate(self.__hidden_layers):
+        inputs = tf.keras.Input(shape=(self.__input_shape, 3), name="input")
+        layer_config = self.__hidden_layers[0]
+        if not layer_config.dropout_rate:
+            layer_config.dropout_rate = (len(self.__hidden_layers)) * 0.1
+        x = self.__add_block(inputs, layer_config)
+        for idx, layer_config in enumerate(self.__hidden_layers[1:]):
             if not layer_config.dropout_rate:
                 layer_config.dropout_rate = (len(self.__hidden_layers) - idx) * 0.1
-            x = self.__add_block(x, layer_config)
+                x = self.__add_block(x, layer_config)
         model = self.__finalise(inputs, x)
         return model
 
@@ -98,6 +101,8 @@ class FunDL(tf.keras.Model):
 
     def summary(self, **kwargs):
         self.__model.summary(**kwargs)
+
+    tf.keras.Model().compile()
 
 
 if __name__ == "__main__":
