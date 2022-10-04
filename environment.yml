@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+  - anaconda
+dependencies:
+  - python=3.10
+  - pip>=21.3.1
+  - typer=0.4.1
