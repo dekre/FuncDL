@@ -1,0 +1,105 @@
+# This file was assembled from multiple pieces, whose use is documented
+# throughout. Please refer to the TensorFlow dockerfiles documentation
+# for more information.
+ARG UBUNTU_VERSION=18.04
+ARG ARCH=
+ARG CUDA=11.2
+
+FROM continuumio/miniconda3:4.12.0 AS build
+
+ARG CONDAENV=aithena
+# Install the package as normal:
+COPY docker/base/environment.yml .
+RUN conda env create -f environment.yml -n ${CONDAENV} \
+    && conda install -y pycuda=2021.1 -n ${CONDAENV} -c conda-forge \
+    && conda clean -a -y  \
+    && conda install -c conda-forge conda-pack \
+    && conda-pack -n ${CONDAENV} -o /tmp/env.tar \
+    && mkdir /venv && cd /venv && tar xf /tmp/env.tar \
+    && rm /tmp/env.tar \
+    && /venv/bin/conda-unpack
+
+# NOTE: TensorRT not supported for Ubuntu 20.04 as of 21.06.2022
+FROM nvidia/cuda${ARCH:+-$ARCH}:${CUDA}.1-base-ubuntu${UBUNTU_VERSION} as runtime
+# ARCH and CUDA are specified again because the FROM directive resets ARGs
+# (but their default value is retained if set previously)
+ARG ARCH
+ARG CUDA
+ARG CUDNN=8.1.0.77-1
+ARG CUDNN_MAJOR_VERSION=8
+ARG LIB_DIR_PREFIX=x86_64
+ARG LIBNVINFER=7.2.2-1
+ARG LIBNVINFER_MAJOR_VERSION=7
+
+# Needed for string substitution
+SHELL ["/bin/bash", "-c"]
+# Pick up some TF dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cuda-command-line-tools-${CUDA/./-} \
+    libcublas-${CUDA/./-} \
+    cuda-nvrtc-${CUDA/./-} \
+    libcufft-${CUDA/./-} \
+    libcurand-${CUDA/./-} \
+    libcusolver-${CUDA/./-} \
+    libcusparse-${CUDA/./-} \
+    curl \
+    libcudnn8=${CUDNN}+cuda${CUDA} \
+    libfreetype6-dev \
+    libhdf5-serial-dev \
+    libzmq3-dev \
+    pkg-config \
+    software-properties-common \
+    unzip
+
+# Install TensorRT if not building for PowerPC
+# NOTE: libnvinfer uses cuda11.1 versions and is only available for ubuntu 18.04
+RUN [[ "${ARCH}" = "ppc64le" ]] || { apt-get update && \
+    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/7fa2af80.pub && \
+    echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /"  > /etc/apt/sources.list.d/tensorRT.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends libnvinfer${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda11.0 \
+    libnvinfer-plugin${LIBNVINFER_MAJOR_VERSION}=${LIBNVINFER}+cuda11.0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*; }
+
+# For CUDA profiling, TensorFlow requires CUPTI.
+ENV LD_LIBRARY_PATH=/usr/local/cuda-11.0/targets/x86_64-linux/lib:/usr/local/cuda/extras/CUPTI/lib64:/usr/local/cuda/lib64:/usr/local/nvidia/lib:/usr/local/nvidia/lib64:$LD_LIBRARY_PATH
+
+# Link the libcuda stub to the location where tensorflow is searching for it and reconfigure
+# dynamic linker run-time bindings
+RUN ln -s /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/stubs/libcuda.so.1 \
+    && echo "/usr/local/cuda/lib64/stubs" > /etc/ld.so.conf.d/z-cuda-stubs.conf \
+    && ldconfig
+
+# See http://bugs.python.org/issue19846
+ENV LANG C.UTF-8 LC_ALL=C.UTF-8
+
+RUN apt-get update -q && \
+    apt-get install -q -y --no-install-recommends \
+    bzip2 \
+    ca-certificates \
+    git \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    mercurial \
+    subversion \
+    wget \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Adding conda environment from ai-thena
+ENV USERNAME=fundl
+ARG APP_DIR=/home/${USERNAME}/app
+ENV PYTHONPATH=$PYTHONPATH:${APP_DIR}
+
+RUN apt-get update \
+    && useradd --create-home --shell /bin/bash ${USERNAME}
+
+WORKDIR /home/${USERNAME}
+USER ${USERNAME}
+
+COPY --from=build --chown=${USERNAME}:${USERNAME} /venv /home/${USERNAME}/venv
+RUN chmod +rwx -R /home/${USERNAME}/venv

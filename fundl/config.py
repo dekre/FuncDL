@@ -9,7 +9,7 @@ class FunDLObjective(Enum):
     REGRESSION = "regression"
 
 
-class FunDLnBlockConfig(BaseModel):
+class FunDLBlockConfig(BaseModel):
     units: int
     activation: str
     add_dropout: bool = True
@@ -23,12 +23,12 @@ class FunDLnBlockConfig(BaseModel):
 def get_default_hidden_layers():
     layers = []
     layers.append(
-        FunDLnBlockConfig(
+        FunDLBlockConfig(
             units=64, activation="sigmoid", name="hidden01", add_dropout=False
         )
     )
     layers.append(
-        FunDLnBlockConfig(
+        FunDLBlockConfig(
             units=64, activation="linear", name="hidden02", add_dropout=False
         )
     )
@@ -42,7 +42,7 @@ class FunDLPipelineConfig(BaseModel):
     objective: FunDLObjective
     basis_choice: Optional[str] = ["fourier"]
     num_basis: Optional[int] = [7]
-    hidden_layers: Optional[List[FunDLnBlockConfig]] = get_default_hidden_layers()
+    hidden_layers: Optional[List[FunDLBlockConfig]] = get_default_hidden_layers()
     domain_range: List[Tuple[float, float]] = [(0, 1)]
     epochs: Optional[int] = 100
     loss_choice: Optional[str] = "mse"
@@ -58,21 +58,20 @@ class FunDLPipelineConfig(BaseModel):
     covariate_scaling: Optional[bool] = True
     raw_data: Optional[bool] = False
 
-
-@root_validator
-def validate_domain_basis_choices(cls, values):
-    domain_range, num_basis, basis_choice = get_multiple_vals_from_dict(
-        "domain_range", "num_basis", "basis_choice", obj=values
-    )
-    if len(domain_range) != len(num_basis):
-        raise ValueError(
-            "The length of domain ranges doesn't match length of num_basis."
+    @root_validator
+    def validate_domain_basis_choices(cls, values):
+        domain_range, num_basis, basis_choice = get_multiple_vals_from_dict(
+            "domain_range", "num_basis", "basis_choice", obj=values
         )
-    if len(domain_range) != len(basis_choice):
-        raise ValueError(
-            "The length of domain ranges doesn't match length of basis choices."
-        )
-    if len(num_basis) != len(basis_choice):
-        raise ValueError(
-            "The length of num_basis doesn't match length of basis choices."
-        )
+        if len(domain_range) != len(num_basis):
+            raise ValueError(
+                "The length of domain ranges doesn't match length of num_basis."
+            )
+        if len(domain_range) != len(basis_choice):
+            raise ValueError(
+                "The length of domain ranges doesn't match length of basis choices."
+            )
+        if len(num_basis) != len(basis_choice):
+            raise ValueError(
+                "The length of num_basis doesn't match length of basis choices."
+            )

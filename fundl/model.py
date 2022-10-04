@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import List
 import tensorflow as tf
 
-from .config import FunDLnBlockConfig, FunDLObjective
+from .config import FunDLBlockConfig, FunDLObjective
 
 
 class DenseDropoutBlock(tf.keras.layers.Layer):
@@ -36,7 +36,7 @@ class FunDL(tf.keras.Model):
         self,
         objective: FunDLObjective,
         input_shape: int,
-        hidden_layers: List[FunDLnBlockConfig],
+        hidden_layers: List[FunDLBlockConfig],
         output_size: int,
     ):
         super(FunDL, self).__init__()
@@ -58,7 +58,7 @@ class FunDL(tf.keras.Model):
             raise ValueError(f"Invalid 'output_size': {self.__output_size}")
 
     def __add_block(
-        self, inputs, instruction: FunDLnBlockConfig
+        self, inputs, instruction: FunDLBlockConfig
     ) -> tf.keras.layers.Layer:
         block = DenseDropoutBlock(
             units=instruction.units,
@@ -76,7 +76,7 @@ class FunDL(tf.keras.Model):
         out = tf.keras.layers.Dense(
             units=self.__output_size, activation=activation, name="output"
         )(x)
-        model = tf.keras.Model(inputs=inputs, outputs=out, name=self.__class__.name)
+        model = tf.keras.Model(inputs=inputs, outputs=out, name="FunDL")
         return model
 
     def __build(self) -> tf.keras.Model:
@@ -96,50 +96,8 @@ class FunDL(tf.keras.Model):
         """
         Call the model
         """
-        __model = self.__build()
-        return __model(inputs)
+        # inputs = tf.convert_to_tensor(inputs, dtype=tf.float32)
+        return self.__model(inputs)
 
     def summary(self, **kwargs):
         self.__model.summary(**kwargs)
-
-    tf.keras.Model().compile()
-
-
-if __name__ == "__main__":
-    hidden_layers = [
-        FunDLnBlockConfig(
-            name="hidden01",
-            units=16,
-            activation="relu",
-            dropout_rate=None,
-        ),
-        FunDLnBlockConfig(
-            name="hidden02",
-            units=32,
-            activation="relu",
-            dropout_rate=None,
-        ),
-        FunDLnBlockConfig(
-            name="hidden03",
-            units=16,
-            activation="relu",
-            dropout_rate=None,
-        ),
-        FunDLnBlockConfig(
-            name="hidden04",
-            units=8,
-            activation="relu",
-            add_dropout=False,
-            dropout_rate=None,
-        ),
-    ]
-    input_shape = 12
-    output_size = 2
-    model = FunDL(
-        objective=FunDLObjective("classification"),
-        input_shape=input_shape,
-        hidden_layers=hidden_layers,
-        output_size=output_size,
-    )
-
-    print(model.summary(line_length=80, show_trainable=True))

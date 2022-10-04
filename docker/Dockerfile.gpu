@@ -1,0 +1,18 @@
+FROM dekre/fundl:py39
+
+ARG PACKAGE_VERSION
+
+USER root
+RUN apt-get update && apt-get install -y openssh-client
+
+
+USER fundl
+SHELL ["/bin/bash", "-c"]
+RUN mkdir -p ~/.ssh \
+    && ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts \
+    && source ~/venv/bin/activate \
+    && pip install fundl==${PACKAGE_VERSION} --no-cache-dir \
+    && pip install protobuf==3.20.1 dvc[s3]==2.16.0 \
+    && mkdir ~/trainer/data -p \
+    && mkdir ~/trainer/models -p \
+    && mkdir ~/trainer/.cache -p

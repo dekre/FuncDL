@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  brawler:
+    container_name: fundl-${CONFIG_NAME}
+    image: dekre/fundl-gpu:${PACKAGE_VERSION}
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+    environment:
+      NVIDIA_DISABLE_REQUIRE: 1
+      LOG_DIR: /home/fundl/trainer/data/logs
+      DATA_DIR: /home/fundl/trainer/data
+      MODEL_DIR: /home/fundl/trainer/models
+      CONFIG: ${CONFIG}
+    command: >
+      /bin/bash -c "source /home/fundl/venv/bin/activate
+      && fundl fit ${CONFIG}"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: "all" # needed when multiple GPUs are available
+              capabilities: [gpu]
+    volumes:
+      - ../.cache:/home/fundl/trainer/.cache
+      - ../data:/home/fundl/trainer/data
+      - ../models:/home/fundl/trainer/models

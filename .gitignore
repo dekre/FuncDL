@@ -1,5 +1,11 @@
-#
+# exclude
+!.gitkeep
+
+# data
 /data
+/models/*
+/.cache/*
+
 # ide
 .vscode
 
