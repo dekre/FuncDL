@@ -2,7 +2,7 @@
 !.gitkeep
 
 # data
-/data
+/data/*
 /models/*
 /.cache/*
 
