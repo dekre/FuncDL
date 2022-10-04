@@ -25,7 +25,7 @@ enabled = false
 
 [python]
 tailor_ignore_solitary_init_files = false
-interpreter_constraints = ["==3.9.*"]
+interpreter_constraints = ["==3.10.*"]
 
 [python-infer]
 inits = true
@@ -34,7 +34,7 @@ inits = true
 search_path = ["<PATH>", "<PYENV>", "/opt/python3"]
 
 [docker]
-build_args = ["USERNAME=thena", "CONDAENV=aithena", "PACKAGE_VERSION"]
+build_args = ["CONDAENV=fundl", "PACKAGE_VERSION"]
 [docker.registries.smiletronix]
 address = "483380410959.dkr.ecr.us-east-1.amazonaws.com"
 default = true

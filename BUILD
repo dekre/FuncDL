@@ -51,7 +51,7 @@ python_distribution(
 docker_image(
     name="fundl-base-gpu",
     source="docker/Dockerfile.base",
-    dependencies=[":thena-base-environment"],
+    dependencies=[":fundl-base-environment"],
     repository="dekre/fund-base-gpu",
     image_tags=["py39"]
 )

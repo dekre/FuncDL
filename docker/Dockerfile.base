@@ -7,7 +7,7 @@ ARG CUDA=11.2
 
 FROM continuumio/miniconda3:4.12.0 AS build
 
-ARG CONDAENV=aithena
+ARG CONDAENV=fundl
 # Install the package as normal:
 COPY docker/base/environment.yml .
 RUN conda env create -f environment.yml -n ${CONDAENV} \
@@ -90,7 +90,7 @@ RUN apt-get update -q && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Adding conda environment from ai-thena
+# Adding conda environment from fundl
 ENV USERNAME=fundl
 ARG APP_DIR=/home/${USERNAME}/app
 ENV PYTHONPATH=$PYTHONPATH:${APP_DIR}

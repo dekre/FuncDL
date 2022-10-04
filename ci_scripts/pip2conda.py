@@ -13,7 +13,7 @@ from typer import Typer, Option, echo
 BASE_DIR = Path(__file__).parent.parent
 PROJECT_DEFAULT_REQS = "3rdparty/requirements.txt"
 
-logger = logging.getLogger("ai-thena")
+logger = logging.getLogger("fundl")
 app = Typer()
 
 PIP2CONDA_MAP = {"opencv-python-headless": "opencv"}
